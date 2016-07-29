@@ -28,6 +28,7 @@ p.yaxis.major_label_text_font_size = '8pt'
 p.title.align = 'center'
 p.title.text_font_size = '16pt'
 p.title.text_font = 'futura'
+p.line(x=[], y=[], color="navy", line_width=3, line_join='round')
 
 # add a button widget and configure with the call back
 button = Button(label="Press Me")
@@ -68,7 +69,7 @@ def callback():
         if not finalname:
             finalname = 'SN1987A'
         newnames.append(finalname)
-    namefield.value = ', '.join(newnames)
+    #namefield.value = ', '.join(newnames)
 
     new = bandfield.value
     newbands = []
@@ -88,7 +89,7 @@ def callback():
         if not finalband:
             finalband = 'V'
         newbands.append(finalband)
-    bandfield.value = ', '.join(newbands)
+    #bandfield.value = ', '.join(newbands)
 
     for name in newnames:
         with open('/root/astrocats/astrocats/supernovae/output/json/' +
@@ -99,12 +100,13 @@ def callback():
         new_data = {}
         new_data['x'] = []
         new_data['y'] = []
-        for photo in event['photometry']:
-            if photo.get('band', '') != finalband:
-                continue
-            new_data['x'].append(float(photo['time']))
-            new_data['y'].append(float(photo['magnitude']))
-        new_datas.append(new_data)
+        for band in newbands:
+            for photo in event['photometry']:
+                if photo.get('band', '') != band:
+                    continue
+                new_data['x'].append(float(photo['time']))
+                new_data['y'].append(float(photo['magnitude']))
+            new_datas.append(new_data)
 
     nxs = []
     nys = []
@@ -115,14 +117,17 @@ def callback():
     y_buf = 0.1*(max(nys) - min(nys))
 
     for ni, name in enumerate(newnames):
-        lineobs.append(p.line(x=[], y=[], color="navy", line_width=3, line_join='round'))
-        circobs.append(p.circle(x=[], y=[], color="navy", line_width=3, line_join='round'))
+        for bi, band in enumerate(newbands):
+            nd = new_datas[ni*len(newbands) + bi]
 
-        lineds = lineobs[-1].data_source
-        circds = circobs[-1].data_source
+            lineobs.append(p.line(x=[], y=[], color="navy", line_width=3, line_join='round'))
+            circobs.append(p.circle(x=[], y=[], color="navy", line_width=3, line_join='round'))
 
-        lineds.data = nd
-        circds.data = nd
+            lineds = lineobs[-1].data_source
+            circds = circobs[-1].data_source
+
+            lineds.data = nd
+            circds.data = nd
 
     p.x_range.start = min(nxs) - x_buf
     p.x_range.end = max(nxs) + x_buf
@@ -130,12 +135,10 @@ def callback():
     p.y_range.end = min(nys) - y_buf
 
 def bandcb(attrname, old, new):
-    if new and old != new:
-        callback()
+    callback()
 
 def namecb(attrname, old, new):
-    if new and old != new:
-        callback()
+    callback()
 
 namefield.on_change('value', namecb)
 bandfield.on_change('value', bandcb)
