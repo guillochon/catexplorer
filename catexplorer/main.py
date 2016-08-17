@@ -1,16 +1,10 @@
 # myapp.py
 
-import json
-import numpy as np
-
-from fuzzywuzzy import process
-
 from bokeh.layouts import column, row
 from bokeh.models import Button, Range1d
 from bokeh.models.widgets import TextInput
 from bokeh.palettes import RdYlBu3
 from bokeh.plotting import figure, curdoc
-#from ..utils import bandcodes
 
 # create a plot and style its properties
 tools = "pan,wheel_zoom,box_zoom,save,crosshair,reset,resize"
@@ -37,77 +31,13 @@ bandfield = TextInput(value="", title="Band(s):")
 
 # add a text renderer to out plot (no data yet)
 
-with open('/root/astrocats/astrocats/supernovae/output/names.min.json') as f:
-    names = json.loads(f.read())
-names = list(names.keys())
-unames = [x.upper() for x in names]
-
-bands = ['U', 'B', 'V', 'R', 'I']
-ubands = [x.upper() for x in bands]
-
 lineobs = []
 circobs = []
 new_datas = []
 nds = []
 
 def callback():
-    new = namefield.value
-    newnames = []
-    for name in [x.strip() for x in new.split(',')]:
-        finalname = ''
-        if name:
-            newname = name.upper()
-            choices = []
-            for ui, un in enumerate(unames):
-                if un == newname:
-                    finalname = names[ui]
-                    break
-                if newname in un:
-                    choices.append(names[ui])
-            if not finalname:
-                finalname = process.extractOne(name, choices)[0]
-        if not finalname:
-            finalname = 'SN1987A'
-        newnames.append(finalname)
-    namefield.value = ', '.join(newnames)
-
-    new = bandfield.value
-    newbands = []
-    for band in [x.strip() for x in new.split(',')]:
-        finalband = ''
-        if band:
-            newband = band.upper()
-            choices = []
-            for ui, un in enumerate(ubands):
-                if un == newband:
-                    finalband = bands[ui]
-                    break
-                if newband in un:
-                    choices.append(bands[ui])
-            if not finalband:
-                finalband = process.extractOne(band, choices)[0]
-        if not finalband:
-            finalband = 'V'
-        newbands.append(finalband)
-    bandfield.value = ', '.join(newbands)
-
-    for name in newnames:
-        with open('/root/astrocats/astrocats/supernovae/output/json/' +
-                  finalname.replace('/', '_') + '.json') as f:
-            event = json.loads(f.read())
-        event = event[list(event.keys())[0]]
-
-        new_data = {}
-        new_data['x'] = []
-        new_data['y'] = []
-        for band in newbands:
-            for photo in event['photometry']:
-                if photo.get('band', '') != band:
-                    continue
-                new_data['x'].append(float(photo['time']))
-                new_data['y'].append(float(photo['magnitude']))
-            new_datas.append(new_data)
-
+    new_datas = [{'x':[0.0, 1.0],'y':[0.0, 1.0]}]
     nxs = []
     nys = []
     for nd in new_datas:
@@ -121,25 +51,17 @@ def callback():
     p.y_range.start = max(nys) + y_buf
     p.y_range.end = min(nys) - y_buf
 
-    for ni, name in enumerate(newnames):
-        for bi, band in enumerate(newbands):
-            nds.append(new_datas[ni*len(newbands) + bi])
+    for nd in new_datas:
+        nds.append(nd)
 
-            lineobs.append(p.line(x=[], y=[], color="navy", line_width=3, line_join='round'))
-            circobs.append(p.circle(x=[], y=[], color="navy", line_width=3, line_join='round'))
+        lineobs.append(p.line(x=[], y=[], color="navy", line_width=3, line_join='round'))
+        circobs.append(p.circle(x=[], y=[], color="navy", line_width=3, line_join='round'))
 
-            lineobs[-1].data_source.data = nds[-1]
-            circobs[-1].data_source.data = nds[-1]
+        lineobs[-1].data_source.data = nds[-1]
+        circobs[-1].data_source.data = nds[-1]
 
-def bandcb(attrname, old, new):
-    callback()
-
-def namecb(attrname, old, new):
-    callback()
-
-#namefield.on_change('value', namecb)
-#bandfield.on_change('value', bandcb)
 button.on_click(callback)
 
 # put the button and plot in a layout and add to the document
 curdoc().add_root(column(p, row(namefield, bandfield), button))
+
