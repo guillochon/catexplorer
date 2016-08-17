@@ -48,8 +48,8 @@ ubands = [x.upper() for x in bands]
 lineobs = []
 circobs = []
 new_datas = []
+nds = []
 
-# create a callback that will add a number in a random location
 def callback():
     new = namefield.value
     newnames = []
@@ -69,7 +69,7 @@ def callback():
         if not finalname:
             finalname = 'SN1987A'
         newnames.append(finalname)
-    #namefield.value = ', '.join(newnames)
+    namefield.value = ', '.join(newnames)
 
     new = bandfield.value
     newbands = []
@@ -89,7 +89,7 @@ def callback():
         if not finalband:
             finalband = 'V'
         newbands.append(finalband)
-    #bandfield.value = ', '.join(newbands)
+    bandfield.value = ', '.join(newbands)
 
     for name in newnames:
         with open('/root/astrocats/astrocats/supernovae/output/json/' +
@@ -116,23 +116,20 @@ def callback():
     x_buf = 0.1*(max(nxs) - min(nxs))
     y_buf = 0.1*(max(nys) - min(nys))
 
-    for ni, name in enumerate(newnames):
-        for bi, band in enumerate(newbands):
-            nd = new_datas[ni*len(newbands) + bi]
-
-            lineobs.append(p.line(x=[], y=[], color="navy", line_width=3, line_join='round'))
-            circobs.append(p.circle(x=[], y=[], color="navy", line_width=3, line_join='round'))
-
-            lineds = lineobs[-1].data_source
-            circds = circobs[-1].data_source
-
-            lineds.data = nd
-            circds.data = nd
-
     p.x_range.start = min(nxs) - x_buf
     p.x_range.end = max(nxs) + x_buf
     p.y_range.start = max(nys) + y_buf
     p.y_range.end = min(nys) - y_buf
+
+    for ni, name in enumerate(newnames):
+        for bi, band in enumerate(newbands):
+            nds.append(new_datas[ni*len(newbands) + bi])
+
+            lineobs.append(p.line(x=[], y=[], color="navy", line_width=3, line_join='round'))
+            circobs.append(p.circle(x=[], y=[], color="navy", line_width=3, line_join='round'))
+
+            lineobs[-1].data_source.data = nds[-1]
+            circobs[-1].data_source.data = nds[-1]
 
 def bandcb(attrname, old, new):
     callback()
@@ -140,9 +137,9 @@ def bandcb(attrname, old, new):
 def namecb(attrname, old, new):
     callback()
 
-namefield.on_change('value', namecb)
-bandfield.on_change('value', bandcb)
+#namefield.on_change('value', namecb)
+#bandfield.on_change('value', bandcb)
 button.on_click(callback)
 
 # put the button and plot in a layout and add to the document
-curdoc().add_root(column(p, row(namefield, bandfield)))
+curdoc().add_root(column(p, row(namefield, bandfield), button))
