@@ -19,7 +19,6 @@ spec = importlib.util.spec_from_file_location("plotting", os.path.dirname(os.pat
 plotting = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plotting)
 
-maxlines = 100
 # create a plot and style its properties
 tools = "pan,wheel_zoom,box_zoom,save,crosshair,reset,resize"
 p = figure(title='Photometry Explorer', active_drag='box_zoom', y_range=Range1d(start=1, end=0),
@@ -40,19 +39,19 @@ p.title.text_font = 'futura'
 mlobs = p.multi_line(xs='xs', ys='ys', line_color='colors', line_width='lws', line_join='round',
     source=ColumnDataSource(data=
         {
-            'xs':[[] for x in range(maxlines)],
-            'ys':[[] for x in range(maxlines)],
-            'colors':['navy' for x in range(maxlines)],
-            'lws':[2 for x in range(maxlines)]
+            'xs':[[]],
+            'ys':[[]],
+            'colors':['white'],
+            'lws':[2]
         }
     ))
 
 circobs = p.circle(x='xs', y='ys', color='colors',
     source=ColumnDataSource(data=
         {
-            'xs':[[] for x in range(maxlines)],
-            'ys':[[] for x in range(maxlines)],
-            'colors':['navy' for x in range(maxlines)],
+            'xs':[[]],
+            'ys':[[]],
+            'colors':['white'],
         }
     ))
 
@@ -136,8 +135,12 @@ def callback():
     if len(newnames) > 1:
         maxmjd = []
         for nd in nds:
+            if not len(nd['x']):
+                continue
             maxmjd.append(nd['x'][nd['y'].index(min(nd['y']))])
         for ndi, nd in enumerate(nds):
+            if not len(nd['x']):
+                continue
             nds[ndi]['x'] = [x - maxmjd[ndi] for x in nd['x']]
 
     nxs = []
@@ -155,22 +158,15 @@ def callback():
 
     mld = {}
     mldf = {}
-    for li in range(maxlines):
-        if li <= len(nds) - 1:
-            nd = nds[li]
-            mld.setdefault('xs',[]).append(nd['x'])
-            mld.setdefault('ys',[]).append(nd['y'])
-            mld.setdefault('colors',[]).append(plotting.bandcolorf(nd['band']))
-            mld.setdefault('lws',[]).append(2)
+    for nd in nds:
+        mld.setdefault('xs',[]).append(nd['x'])
+        mld.setdefault('ys',[]).append(nd['y'])
+        mld.setdefault('colors',[]).append(plotting.bandcolorf(nd['band']))
+        mld.setdefault('lws',[]).append(2)
 
-            mldf.setdefault('xs',[]).extend(nd['x'])
-            mldf.setdefault('ys',[]).extend(nd['y'])
-            mldf.setdefault('colors',[]).extend([plotting.bandcolorf(nd['band']) for x in range(len(nd['x']))])
-        else:
-            mld.setdefault('xs',[]).append([0.0])
-            mld.setdefault('ys',[]).append([0.0])
-            mld.setdefault('colors',[]).append('white')
-            mld.setdefault('lws',[]).append(0)
+        mldf.setdefault('xs',[]).extend(nd['x'])
+        mldf.setdefault('ys',[]).extend(nd['y'])
+        mldf.setdefault('colors',[]).extend([plotting.bandcolorf(nd['band']) for x in range(len(nd['x']))])
         
     mlobs.data_source.data = mld
     circobs.data_source.data = mldf
